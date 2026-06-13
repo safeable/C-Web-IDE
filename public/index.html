@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C++ Web IDE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root, [data-theme="light"] {
+            --bg: #fafafa;
+            --bg-dark: #f0f0f0;
+            --surface: #ffffff;
+            --surface-alt: #f5f5f5;
+            --border: #e0e0e0;
+            --border-strong: #cccccc;
+            --text: #1a1a1a;
+            --text-secondary: #555555;
+            --text-muted: #999999;
+            --accent: #2563eb;
+            --accent-light: #dbeafe;
+            --accent-dark: #1d4ed8;
+            --red: #dc2626;
+            --red-light: #fef2f2;
+            --green: #16a34a;
+            --green-light: #f0fdf4;
+            --yellow: #ca8a04;
+            --yellow-light: #fefce8;
+            --mono: 'IBM Plex Mono', 'Menlo', monospace;
+            --sans: 'IBM Plex Sans', -apple-system, sans-serif;
+            --radius: 6px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --spinner-track: rgba(0,0,0,0.1);
+            --spinner-top: var(--accent);
+        }
+
+        [data-theme="dark"] {
+            --bg: #111111;
+            --bg-dark: #1a1a1a;
+            --surface: #181818;
+            --surface-alt: #1e1e1e;
+            --border: #2a2a2a;
+            --border-strong: #3a3a3a;
+            --text: #e4e4e4;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent: #5b9bf5;
+            --accent-light: #1a2a40;
+            --accent-dark: #7db4ff;
+            --red: #f87171;
+            --red-light: #2a1515;
+            --green: #4ade80;
+            --green-light: #14261a;
+            --yellow: #facc15;
+            --yellow-light: #2a2510;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+            --spinner-track: rgba(255,255,255,0.1);
+            --spinner-top: var(--accent);
+        }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ─── Top Bar ─── */
+        .topbar {
+            height: 48px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--text);
+            padding-right: 12px;
+            border-right: 1px solid var(--border);
+        }
+
+        .topbar-brand svg { width: 20px; height: 20px; color: var(--accent); }
+
+        .topbar-tabs {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            flex: 1;
+        }
+
+        .topbar-tab {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            font-size: 12.5px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+            white-space: nowrap;
+        }
+
+        .topbar-tab:hover { background: var(--bg-dark); }
+
+        .topbar-tab.active {
+            background: var(--accent-light);
+            color: var(--accent-dark);
+        }
+
+        .topbar-tab-icon {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            flex-shrink: 0;
+        }
+
+        .tab-close {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px; height: 16px;
+            border-radius: 3px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.12s;
+            flex-shrink: 0;
+            margin-left: 2px;
+            margin-right: -4px;
+        }
+
+        .topbar-tab:hover .tab-close { opacity: 1; }
+        .tab-close:hover { background: var(--red); color: #fff; }
+        .tab-close svg { width: 10px; height: 10px; }
+
+        .tab-add {
+            width: 28px; height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px dashed var(--border);
+            border-radius: var(--radius);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+
+        .tab-add:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        .tab-add svg { width: 14px; height: 14px; }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11.5px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: var(--sans);
+        }
+
+        .pill--subtle {
+            background: var(--surface-alt);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .pill--subtle:hover { background: var(--border); }
+
+        .pill--accent {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .pill--accent:hover { background: var(--accent-dark); }
+
+        .pill--accent:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .pill svg { width: 14px; height: 14px; }
+
+        .pill .dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.5;
+        }
+
+        /* ─── Work Area ─── */
+        .workarea {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* ─── Editor Section ─── */
+        .editor-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .editor-toolbar {
+            height: 38px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .editor-toolbar-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .editor-toolbar-sep {
+            width: 1px;
+            height: 16px;
+            background: var(--border);
+        }
+
+        .editor-toolbar-info {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        #editor {
+            flex: 1;
+        }
+
+        /* ─── Divider ─── */
+        .divider {
+            width: 1px;
+            background: var(--border);
+            cursor: col-resize;
+            position: relative;
+            flex-shrink: 0;
+            transition: background 0.15s;
+        }
+
+        .divider::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            width: 5px;
+            left: -2px;
+        }
+
+        .divider:hover, .divider.dragging {
+            background: var(--accent);
+        }
+
+        /* ─── Console Section ─── */
+        .console-section {
+            width: 36%;
+            min-width: 0;
+            max-width: 55%;
+            display: flex;
+            flex-direction: column;
+            background: var(--surface);
+            flex-shrink: 0;
+        }
+
+        .console-header {
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 14px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .console-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .console-header-title {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .console-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 9px;
+            font-size: 10px;
+            font-weight: 600;
+            background: var(--bg-dark);
+            color: var(--text-muted);
+        }
+
+        .console-badge.ok { background: var(--green-light); color: var(--green); }
+        .console-badge.err { background: var(--red-light); color: var(--red); }
+
+        .console-clear {
+            width: 26px; height: 26px;
+            display: flex; align-items: center; justify-content: center;
+            background: transparent;
+            border: none;
+            border-radius: var(--radius);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.12s;
+        }
+
+        .console-clear:hover { background: var(--bg-dark); color: var(--text); }
+        .console-clear svg { width: 14px; height: 14px; }
+
+        #output {
+            flex: 1;
+            padding: 12px 14px;
+            font-family: var(--mono);
+            font-size: 12.5px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-y: auto;
+            color: var(--text);
+            background: var(--surface-alt);
+        }
+
+        .ph { color: var(--text-muted); font-style: italic; font-size: 12px; }
+
+        .out-err { color: var(--red); }
+        .out-ok { color: var(--green); }
+        .out-warn { color: var(--yellow); }
+
+        .out-meta {
+            font-size: 10.5px;
+            color: var(--text-muted);
+            margin-right: 6px;
+        }
+
+        /* ─── Bottom Bar ─── */
+        .bottombar {
+            height: 28px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            font-size: 11px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .bottombar-left, .bottombar-right {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .bb-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .bb-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+        }
+
+        kbd {
+            display: inline-block;
+            padding: 0 4px;
+            font-family: var(--mono);
+            font-size: 10px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            line-height: 1.6;
+        }
+
+        /* ─── Scrollbar ─── */
+        #output::-webkit-scrollbar { width: 5px; }
+        #output::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+        #output::-webkit-scrollbar-track { background: transparent; }
+
+        /* ─── Loading Spinner ─── */
+        .spinner-sm {
+            width: 12px; height: 12px;
+            border: 2px solid var(--spinner-track);
+            border-top-color: var(--spinner-top);
+            border-radius: 50%;
+            animation: spin 0.5s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── Modal ─── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 24px;
+            width: 360px;
+            max-width: 90vw;
+            box-shadow: var(--shadow-md);
+            transform: translateY(10px) scale(0.97);
+            transition: transform 0.15s;
+        }
+
+        .modal-overlay.open .modal {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 10px 12px;
+            font-family: var(--mono);
+            font-size: 13px;
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .modal-input:focus {
+            border-color: var(--accent);
+        }
+
+        .modal-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .modal-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            padding: 7px 16px;
+            border-radius: var(--radius);
+            font-size: 12.5px;
+            font-weight: 600;
+            font-family: var(--sans);
+            border: none;
+            cursor: pointer;
+            transition: all 0.12s;
+        }
+
+        .modal-btn--cancel {
+            background: var(--surface-alt);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .modal-btn--cancel:hover { background: var(--border); }
+
+        .modal-btn--create {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .modal-btn--create:hover { background: var(--accent-dark); }
+
+        /* ─── GUI Toggle ─── */
+        .gui-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .gui-toggle input { display: none; }
+
+        .gui-switch {
+            width: 32px; height: 18px;
+            background: var(--border);
+            border-radius: 9px;
+            position: relative;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .gui-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px; left: 2px;
+            width: 14px; height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        }
+
+        .gui-toggle input:checked + .gui-switch {
+            background: var(--accent);
+        }
+
+        .gui-toggle input:checked + .gui-switch::after {
+            transform: translateX(14px);
+        }
+
+        .gui-toggle input:checked ~ .gui-label { color: var(--accent); }
+
+        /* ─── Screenshot / VNC ─── */
+        .screenshot-area {
+            display: none;
+            border-top: 1px solid var(--border);
+            background: var(--surface-alt);
+            flex-direction: column;
+        }
+
+        .screenshot-area.visible { display: flex; }
+
+        .screenshot-area img {
+            max-width: 100%;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        .screenshot-area img:hover { transform: scale(1.01); }
+
+        .screenshot-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stop-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 6px 14px;
+            background: var(--red);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 11px;
+            font-weight: 600;
+            font-family: var(--sans);
+            cursor: pointer;
+            transition: all 0.15s;
+            margin: 6px 14px;
+        }
+
+        .stop-btn:hover { opacity: 0.85; }
+        .stop-btn.visible { display: inline-flex; }
+        .stop-btn svg { width: 12px; height: 12px; }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 640px) {
+            .workarea { flex-direction: column; }
+            .console-section { width: 100% !important; max-width: 100% !important; height: 45%; min-width: unset; }
+            .divider { width: 100%; height: 1px; cursor: row-resize; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <div class="topbar-brand">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            C++ IDE
+        </div>
+        <div class="topbar-tabs" id="tabBar">
+            <!-- Sekmeler JS ile doldurulacak -->
+        </div>
+        <div class="topbar-actions">
+            <button class="pill pill--subtle" id="themeBtn" onclick="toggleTheme()" title="Tema Değiştir">
+                <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <span id="themeLabel">Karanlık</span>
+            </button>
+            <button class="pill pill--subtle" onclick="clearConsole()" title="Konsolu temizle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Temizle
+            </button>
+            <button class="pill pill--accent" id="runBtn" onclick="runCode()" title="Ctrl + Enter">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span id="btnLabel">Çalıştır</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="workarea">
+        <div class="editor-section">
+            <div class="editor-toolbar">
+                <span class="editor-toolbar-label">Editör</span>
+                <div class="editor-toolbar-sep"></div>
+                <span class="editor-toolbar-info">C++ &middot; UTF-8 &middot; Boşluk: 4</span>
+                <div style="flex:1"></div>
+                <label class="gui-toggle" title="GUI modunda çalıştır (Xvfb + ekran görüntüsü)">
+                    <input type="checkbox" id="guiMode">
+                    <span class="gui-switch"></span>
+                    <span class="gui-label">GUI</span>
+                </label>
+            </div>
+            <div id="editor"></div>
+        </div>
+
+        <div class="divider" id="divider"></div>
+
+        <div class="console-section" id="consoleSection">
+            <div class="console-header">
+                <div class="console-header-left">
+                    <span class="console-header-title">Konsol</span>
+                    <span class="console-badge" id="badge"></span>
+                </div>
+                <button class="console-clear" onclick="clearConsole()" title="Temizle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div id="output">
+                <span class="ph">Çıktı burada görünecek...</span>
+            </div>
+            <div class="screenshot-area" id="screenshotArea">
+                <div class="screenshot-label">
+                    GUI Penceresi Açıldı
+                    <span style="font-weight:400;text-transform:none;letter-spacing:0;margin-left:4px">(yeni pencerede)</span>
+                </div>
+                <div style="display:flex;gap:6px;margin-top:8px">
+                    <button class="pill pill--subtle" id="openGuiBtn" onclick="openGuiWindow()" title="GUI penceresini tekrar aç">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Pencereyi Aç
+                    </button>
+                    <select id="resSelect" class="pill pill--subtle" onchange="updateRes()" style="cursor:pointer;padding:4px 8px;font-size:11px">
+                        <option value="1280x720">1280x720</option>
+                        <option value="1920x1080" selected>1920x1080</option>
+                        <option value="1600x900">1600x900</option>
+                        <option value="2560x1440">2560x1440</option>
+                    </select>
+                </div>
+            </div>
+            <button class="stop-btn" id="stopBtn" onclick="stopSession()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                Durdur
+            </button>
+        </div>
+    </div>
+
+    <div class="bottombar">
+        <div class="bottombar-left">
+            <div class="bb-item">
+                <span class="bb-dot" id="bbDot"></span>
+                <span id="bbStatus">Hazır</span>
+            </div>
+        </div>
+        <div class="bottombar-right">
+            <div class="bb-item">C++17</div>
+            <div class="bb-item"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> çalıştır</div>
+        </div>
+    </div>
+
+    <!-- Yeni Dosya Modalı -->
+    <div class="modal-overlay" id="newFileModal">
+        <div class="modal">
+            <h3>Yeni Dosya Oluştur</h3>
+            <input class="modal-input" id="newFileName" type="text" placeholder="dosya_adi.cpp" autocomplete="off" spellcheck="false">
+            <div class="modal-hint">Uzantı otomatik olarak .cpp olarak eklenecektir.</div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn--cancel" onclick="closeNewFileModal()">İptal</button>
+                <button class="modal-btn modal-btn--create" onclick="createNewFile()">Oluştur</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let editor;
+        let isRunning = false;
+
+        /* ── Dosya Yönetimi ── */
+        const DEFAULT_CODE = [
+            '#include <iostream>',
+            '',
+            'int main() {',
+            '    std::cout << "Merhaba Dunya!" << std::endl;',
+            '    return 0;',
+            '}'
+        ].join('\n');
+
+        const files = {};
+        let activeFile = null;
+        const STORAGE_KEY = 'cpp-ide-files';
+
+        function saveFiles() {
+            const data = {};
+            for (const name in files) data[name] = files[name].content;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ files: data, active: activeFile }));
+        }
+
+        function loadFiles() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    if (data && data.files && Object.keys(data.files).length > 0) {
+                        for (const name in data.files) files[name] = { content: data.files[name] };
+                        activeFile = data.active && files[data.active] ? data.active : Object.keys(files)[0];
+                        return true;
+                    }
+                }
+            } catch (_) {}
+            return false;
+        }
+
+        function initFiles() {
+            if (!loadFiles()) {
+                files['main.cpp'] = { content: DEFAULT_CODE };
+                activeFile = 'main.cpp';
+            }
+            renderTabs();
+            const savedGui = localStorage.getItem('cpp-ide-gui');
+            if (savedGui !== null) document.getElementById('guiMode').checked = savedGui === 'true';
+            document.getElementById('guiMode').addEventListener('change', function () {
+                localStorage.setItem('cpp-ide-gui', this.checked);
+            });
+        }
+
+        function renderTabs() {
+            const bar = document.getElementById('tabBar');
+            let html = '';
+            const names = Object.keys(files);
+            for (let i = 0; i < names.length; i++) {
+                const name = names[i];
+                const isActive = name === activeFile;
+                html += '<div class="topbar-tab' + (isActive ? ' active' : '') + '" onclick="switchFile(\'' + escAttr(name) + '\')">';
+                html += '<span class="topbar-tab-icon"></span>';
+                html += escHtml(name);
+                html += '<button class="tab-close" onclick="event.stopPropagation(); closeFile(\'' + escAttr(name) + '\')" title="Kapat">';
+                html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+                html += '</button>';
+                html += '</div>';
+            }
+            html += '<button class="tab-add" onclick="openNewFileModal()" title="Yeni Dosya">';
+            html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+            html += '</button>';
+            bar.innerHTML = html;
+            updateEditorInfo();
+        }
+
+        function switchFile(name) {
+            if (!files[name] || name === activeFile) return;
+            files[activeFile].content = editor.getValue();
+            activeFile = name;
+            editor.setValue(files[name].content);
+            editor.focus();
+            renderTabs();
+            saveFiles();
+        }
+
+        function closeFile(name) {
+            if (!files[name]) return;
+            delete files[name];
+            if (activeFile === name) {
+                const remaining = Object.keys(files);
+                if (remaining.length === 0) {
+                    files['main.cpp'] = { content: DEFAULT_CODE };
+                    activeFile = 'main.cpp';
+                } else {
+                    activeFile = remaining[0];
+                }
+                editor.setValue(files[activeFile].content);
+                editor.focus();
+            }
+            renderTabs();
+            saveFiles();
+        }
+
+        function openNewFileModal() {
+            document.getElementById('newFileName').value = '';
+            document.getElementById('newFileModal').classList.add('open');
+            setTimeout(function () {
+                document.getElementById('newFileName').focus();
+            }, 100);
+        }
+
+        function closeNewFileModal() {
+            document.getElementById('newFileModal').classList.remove('open');
+        }
+
+        function createNewFile() {
+            let raw = document.getElementById('newFileName').value.trim();
+            if (!raw) return;
+
+            if (!raw.endsWith('.cpp')) raw += '.cpp';
+
+            if (/[\\/:*?"<>|]/.test(raw)) {
+                document.getElementById('newFileName').style.borderColor = 'var(--red)';
+                setTimeout(function () {
+                    document.getElementById('newFileName').style.borderColor = '';
+                }, 1500);
+                return;
+            }
+
+            if (files[raw]) {
+                document.getElementById('newFileName').style.borderColor = 'var(--red)';
+                setTimeout(function () {
+                    document.getElementById('newFileName').style.borderColor = '';
+                }, 1500);
+                return;
+            }
+
+            files[raw] = { content: '#include <iostream>\n\nint main() {\n    return 0;\n}' };
+            activeFile = raw;
+            editor.setValue(files[raw].content);
+            editor.focus();
+            closeNewFileModal();
+            renderTabs();
+            saveFiles();
+        }
+
+        function updateEditorInfo() {
+            const info = document.querySelector('.editor-toolbar-info');
+            if (info) {
+                info.textContent = activeFile + ' \u00B7 UTF-8 \u00B7 Bo\u015Fluk: 4';
+            }
+        }
+
+        function escHtml(t) {
+            const d = document.createElement('div');
+            d.textContent = t;
+            return d.innerHTML;
+        }
+
+        function escAttr(t) {
+            return t.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        /* Modal Enter tuşu */
+        document.getElementById('newFileName').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); createNewFile(); }
+            if (e.key === 'Escape') { closeNewFileModal(); }
+        });
+
+        /* Modal overlay tıklama ile kapatma */
+        document.getElementById('newFileModal').addEventListener('click', function (e) {
+            if (e.target === this) closeNewFileModal();
+        });
+
+        /* ── Tema ── */
+        function getTheme() {
+            return localStorage.getItem('cpp-ide-theme') || 'light';
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            const sun = document.getElementById('themeIconSun');
+            const moon = document.getElementById('themeIconMoon');
+            const label = document.getElementById('themeLabel');
+
+            if (theme === 'dark') {
+                sun.style.display = 'none';
+                moon.style.display = '';
+                label.textContent = 'Aydınlık';
+            } else {
+                sun.style.display = '';
+                moon.style.display = 'none';
+                label.textContent = 'Karanlık';
+            }
+
+            if (typeof monaco !== 'undefined' && editor) {
+                monaco.editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs');
+            }
+
+            localStorage.setItem('cpp-ide-theme', theme);
+        }
+
+        function toggleTheme() {
+            const current = getTheme();
+            applyTheme(current === 'dark' ? 'light' : 'dark');
+        }
+
+        applyTheme(getTheme());
+
+        /* ── Monaco ── */
+        require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' } });
+        require(['vs/editor/editor.main'], function () {
+            initFiles();
+
+            editor = monaco.editor.create(document.getElementById('editor'), {
+                value: files[activeFile].content,
+                language: 'cpp',
+                theme: getTheme() === 'dark' ? 'vs-dark' : 'vs',
+                automaticLayout: true,
+                fontSize: 14,
+                fontFamily: "'IBM Plex Mono', 'Menlo', monospace",
+                fontLigatures: true,
+                minimap: { enabled: false },
+                padding: { top: 16, bottom: 16 },
+                smoothScrolling: true,
+                cursorSmoothCaretAnimation: 'on',
+                renderLineHighlight: 'gutter',
+                bracketPairColorization: { enabled: true },
+                guides: { bracketPairs: true },
+                tabSize: 4,
+                insertSpaces: true,
+                wordWrap: 'on',
+                lineNumbers: 'on',
+                glyphMargin: false,
+                folding: true,
+                lineDecorationsWidth: 8,
+                lineNumbersMinChars: 3
+            });
+
+            editor.focus();
+
+            editor.onDidChangeModelContent(function () {
+                if (activeFile && files[activeFile]) {
+                    files[activeFile].content = editor.getValue();
+                    saveFiles();
+                }
+            });
+        });
+
+        /* ── Kısayol ── */
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                runCode();
+            }
+        });
+
+        /* ── Divider (Resize) ── */
+        (function () {
+            const divider = document.getElementById('divider');
+            const panel = document.getElementById('consoleSection');
+            const workarea = document.querySelector('.workarea');
+            let dragging = false;
+
+            divider.addEventListener('mousedown', function (e) {
+                dragging = true;
+                divider.classList.add('dragging');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', function (e) {
+                if (!dragging) return;
+                const rect = workarea.getBoundingClientRect();
+                const w = rect.right - e.clientX;
+                panel.style.width = Math.min(Math.max(w, 240), rect.width * 0.55) + 'px';
+            });
+
+            document.addEventListener('mouseup', function () {
+                if (dragging) {
+                    dragging = false;
+                    divider.classList.remove('dragging');
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                }
+            });
+        })();
+
+        /* ── Yardımcılar ── */
+        function ts() {
+            return new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        function clearConsole() {
+            const o = document.getElementById('output');
+            o.innerHTML = '<span class="ph">Çıktı burada görünecek...</span>';
+            o.className = '';
+            document.getElementById('badge').textContent = '';
+            document.getElementById('badge').className = 'console-badge';
+            document.getElementById('screenshotArea').classList.remove('visible');
+            document.getElementById('stopBtn').classList.remove('visible');
+            closeGuiWindow();
+        }
+
+        let currentSessionId = null;
+        let guiWindow = null;
+
+        function openGuiWindow() {
+            if (!currentSessionId || !activeSessions_data || !activeSessions_data.vncUrl) return;
+            if (guiWindow && !guiWindow.closed) { guiWindow.focus(); return; }
+            guiWindow = window.open(
+                activeSessions_data.vncUrl,
+                'cpp-gui',
+                'width=1280,height=800,menubar=no,toolbar=no,location=no,status=no,resizable=yes'
+            );
+        }
+
+        function closeGuiWindow() {
+            if (guiWindow && !guiWindow.closed) { guiWindow.close(); }
+            guiWindow = null;
+            activeSessions_data = null;
+        }
+
+        let activeSessions_data = null;
+
+        function stopSession() {
+            if (!currentSessionId) return;
+            fetch('/stop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: currentSessionId })
+            }).then(() => {
+                currentSessionId = null;
+                closeGuiWindow();
+                document.getElementById('screenshotArea').classList.remove('visible');
+                document.getElementById('stopBtn').classList.remove('visible');
+                document.getElementById('bbStatus').textContent = 'Durduruldu';
+                document.getElementById('bbDot').style.background = 'var(--text-muted)';
+            });
+        }
+
+        function updateRes() {
+            /* Sonraki çalıştırma için seçilen çözünürlük kullanılacak */
+        }
+
+        /* ── Çalıştır ── */
+        async function runCode() {
+            if (isRunning) return;
+
+            files[activeFile].content = editor.getValue();
+            const guiMode = document.getElementById('guiMode').checked;
+
+            const output = document.getElementById('output');
+            const btn = document.getElementById('runBtn');
+            const label = document.getElementById('btnLabel');
+            const badge = document.getElementById('badge');
+            const bbDot = document.getElementById('bbDot');
+            const bbStatus = document.getElementById('bbStatus');
+            const ssArea = document.getElementById('screenshotArea');
+            const stopBtn = document.getElementById('stopBtn');
+
+            if (currentSessionId) stopSession();
+
+            ssArea.classList.remove('visible');
+            stopBtn.classList.remove('visible');
+            closeGuiWindow();
+
+            isRunning = true;
+            btn.disabled = true;
+            label.innerHTML = '<span class="spinner-sm"></span>';
+            bbDot.style.background = 'var(--yellow)';
+            bbStatus.textContent = guiMode ? 'GUI baslatiliyor...' : 'Derleniyor...';
+
+            const modeLabel = guiMode ? 'GUI' : 'Terminal';
+            output.innerHTML = '<span class="out-meta">[' + ts() + ']</span> ' + modeLabel + ' modunda derleniyor... (' + escHtml(activeFile) + ')\n';
+            output.className = 'out-warn';
+
+            try {
+                const res = await fetch('/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: editor.getValue(), gui: guiMode, resolution: document.getElementById('resSelect').value })
+                });
+                const data = await res.json();
+                const m = '<span class="out-meta">[' + ts() + ']</span> ';
+
+                if (data.vncUrl) {
+                    currentSessionId = data.sessionId;
+                    activeSessions_data = data;
+                    ssArea.classList.add('visible');
+                    stopBtn.classList.add('visible');
+                    setTimeout(function() { openGuiWindow(); }, 300);
+                }
+
+                if (data.isError) {
+                    output.innerHTML += m + escHtml(data.output || 'Bilinmeyen hata.');
+                    output.className = 'out-err';
+                    badge.textContent = '!';
+                    badge.className = 'console-badge err';
+                    bbDot.style.background = 'var(--red)';
+                    bbStatus.textContent = 'Hata';
+                } else {
+                    output.innerHTML += m + escHtml(data.output || 'Program cikti vermedi.');
+                    output.className = 'out-ok';
+                    badge.textContent = '✓';
+                    badge.className = 'console-badge ok';
+                    bbDot.style.background = 'var(--green)';
+                    bbStatus.textContent = data.interactive ? 'Etkilesimli' : 'Basarili';
+                }
+            } catch (e) {
+                output.innerHTML += '<span class="out-meta">[' + ts() + ']</span> Baglanti hatasi!';
+                output.className = 'out-err';
+                badge.textContent = '!';
+                badge.className = 'console-badge err';
+                bbDot.style.background = 'var(--red)';
+                bbStatus.textContent = 'Baglanti Hatasi';
+            } finally {
+                isRunning = false;
+                btn.disabled = false;
+                label.textContent = 'Çalıştır';
+            }
+        }
+    </script>
+</body>
+</html>
